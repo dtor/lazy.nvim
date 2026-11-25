@@ -326,11 +326,13 @@ function M.load()
   Config.spec = Spec.new()
 
   local specs = {
-    ---@diagnostic disable-next-line: param-type-mismatch
-    vim.deepcopy(Config.options.spec),
+    { "folke/lazy.nvim" },
   }
+  if Config.options.spec ~= nil then
+    ---@diagnostic disable-next-line: param-type-mismatch
+    specs[#specs + 1] = vim.deepcopy(Config.options.spec)
+  end
   specs[#specs + 1] = M.find_local_spec()
-  specs[#specs + 1] = { "folke/lazy.nvim" }
 
   Config.spec:parse(specs)
 

@@ -524,3 +524,77 @@ describe("plugin spec", function()
     end
   end)
 end)
+
+describe("Plugin.load", function()
+  local orig_spec
+  local orig_local_spec
+  local orig_plugins
+  local orig_spec_loader
+  local orig_to_clean
+
+  before_each(function()
+    orig_spec = Config.options.spec
+    orig_local_spec = Config.options.local_spec
+    orig_plugins = Config.plugins
+    orig_spec_loader = Config.spec
+    orig_to_clean = Config.to_clean
+    Config.options.local_spec = false
+  end)
+
+  after_each(function()
+    Config.options.spec = orig_spec
+    Config.options.local_spec = orig_local_spec
+    Config.plugins = orig_plugins
+    Config.spec = orig_spec_loader
+    Config.to_clean = orig_to_clean
+  end)
+
+  it("allows overriding lazy.nvim url and branch in user spec", function()
+    Config.options.spec = {
+      { "myfork/lazy.nvim", branch = "work" },
+    }
+    Plugin.load()
+    local lazy = Config.plugins["lazy.nvim"]
+    assert(lazy)
+    assert.same("https://github.com/myfork/lazy.nvim.git", lazy.url)
+    assert.same("work", lazy.branch)
+    assert.same(Config.me, lazy.dir)
+    assert.same(true, lazy.lazy)
+  end)
+
+  it("allows overriding lazy.nvim with explicit url and branch", function()
+    Config.options.spec = {
+      { "folke/lazy.nvim", url = "https://example.com/custom/lazy.nvim.git", branch = "custom" },
+    }
+    Plugin.load()
+    local lazy = Config.plugins["lazy.nvim"]
+    assert(lazy)
+    assert.same("https://example.com/custom/lazy.nvim.git", lazy.url)
+    assert.same("custom", lazy.branch)
+    assert.same(Config.me, lazy.dir)
+  end)
+
+  it("uses default folke/lazy.nvim when no lazy.nvim spec is given", function()
+    Config.options.spec = {
+      { "foo/bar" },
+    }
+    Plugin.load()
+    local lazy = Config.plugins["lazy.nvim"]
+    assert(lazy)
+    assert.same("https://github.com/folke/lazy.nvim.git", lazy.url)
+    assert.is_nil(lazy.branch)
+    assert.same(Config.me, lazy.dir)
+    assert(Config.plugins.bar)
+  end)
+
+  it("handles nil Config.options.spec cleanly", function()
+    Config.options.spec = nil
+    Plugin.load()
+    local lazy = Config.plugins["lazy.nvim"]
+    assert(lazy)
+    assert.same("https://github.com/folke/lazy.nvim.git", lazy.url)
+    assert.is_nil(lazy.branch)
+    assert.same(Config.me, lazy.dir)
+    assert.same(0, #Config.spec.notifs)
+  end)
+end)
